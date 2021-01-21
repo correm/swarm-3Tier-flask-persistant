@@ -1,0 +1,18 @@
+create persistant storage
+
+https://thenewstack.io/tutorial-create-a-docker-swarm-with-persistent-storage-using-glusterfs/
+
+docker exec -it  bash
+mongo -u ROOT -p rootpass1234
+show dbs;
+use flaskdb
+db.createUser({user: 'TEST', pwd: 'Test1234', roles: [{role: 'readWrite', db: 'flaskdb'}]})
+exit
+mongo -u TEST -p Test1234 --authenticationDatabase flaskdb
+exit
+exit
+
+
+db.runCommand( { updateUser : "TEST", roles : [ { role : "readWrite", db : "flaskdb" } ]} )
+
+db.updateUser({user: 'TEST', pwd: 'Test1234', roles: [{role: 'readWrite', db: 'flaskdb'}]})

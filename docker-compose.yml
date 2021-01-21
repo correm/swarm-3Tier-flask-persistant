@@ -1,0 +1,111 @@
+version: '3.1'
+services:
+
+ flask:
+   build:
+     context: app
+     dockerfile: Dockerfile
+   container_name: flask
+   image: mcscratch/flask-python:3.8
+   restart: unless-stopped
+   environment:
+     APP_ENV: "prod"
+     APP_DEBUG: "False"
+     APP_PORT: 5000
+     MONGODB_DATABASE: flaskdb
+     MONGODB_USERNAME: TEST
+     MONGODB_PASSWORD: Test1234
+     MONGODB_HOSTNAME: mongodb
+   volumes:
+     - appdata:/var/www
+   depends_on:
+     - mongodb
+   networks:
+     - frontend
+     - backend
+   deploy:
+     replicas: 3
+
+
+ mongodb:
+   image: mongo:4.0.8
+   container_name: mongodb
+   restart: unless-stopped
+   command: mongod --auth
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: ROOT
+     MONGO_INITDB_ROOT_PASSWORD: rootpass1234
+     MONGO_INITDB_DATABASE: flaskdb
+     MONGODB_DATA_DIR: /data/db
+     MONDODB_LOG_DIR: /dev/null
+   volumes:
+    - /mnt/mongo_db_data:/data/db
+   networks:
+     - backend
+   
+ mongoexpress:
+   image: mongo-express
+   container_name: mongoexp
+   restart: unless-stopped
+   environment:
+    - ME_CONFIG_MONGODB_ADMINUSERNAME=ROOT 
+    - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpass1234 
+    - ME_CONFIG_MONGODB_SERVER=mongodb 
+   ports:
+    - "8082:8081"
+   depends_on:
+     - mongodb
+   networks:
+     - backend
+   deploy:
+     replicas: 2
+
+   
+
+ webserver:
+   build:
+     context: nginx
+     dockerfile: Dockerfile
+   image: mcscratch/webserver:latest
+   container_name: webserver
+   restart: unless-stopped
+   environment:
+     APP_ENV: "prod"
+     APP_NAME: "webserver"
+     APP_DEBUG: "true"
+     SERVICE_NAME: "webserver"
+   ports:
+     - "80:80"
+     - "443:443"
+   volumes:
+     - nginxdata:/var/log/nginx
+   depends_on:
+     - flask
+   networks:
+     - frontend
+   deploy:
+     replicas: 3
+
+ visualizer:
+    image: dockersamples/visualizer
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m30s
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      replicas: 3
+
+
+networks:
+ frontend:  
+ backend:
+
+
+volumes:
+ appdata:
+   driver: local
+ nginxdata:
+   driver: local
